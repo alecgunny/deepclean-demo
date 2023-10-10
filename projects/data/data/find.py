@@ -5,6 +5,26 @@ from gwpy.segments import DataQualityDict, DataQualityFlag, SegmentList
 OPEN_DATA_FLAGS = ["H1_DATA", "L1_DATA", "V1_DATA"]
 
 
+def split_segments(segments: SegmentList, chunk_size: float) -> SegmentList:
+    """
+    Split a list of segments into segments that are at most
+    `chunk_size` seconds long
+    """
+    out_segments = SegmentList()
+    for segment in segments:
+        start, stop = segment
+        duration = stop - start
+        if duration > chunk_size:
+            num_segments = int((duration - 1) // chunk_size) + 1
+            for i in range(num_segments):
+                end = min(start + (i + 1) * chunk_size, stop)
+                seg = (start + i * chunk_size, end)
+                out_segments.append(seg)
+        else:
+            out_segments.append(segment)
+    return out_segments
+
+
 class DataQualityDict(DataQualityDict):
     @classmethod
     def query_non_open(
@@ -41,6 +61,7 @@ class DataQualityDict(DataQualityDict):
         start: float,
         end: float,
         min_duration: Optional[float] = None,
+        chunk_size: Optional[float] = None,
         **kwargs
     ) -> SegmentList:
         flags = set(flags)
@@ -59,4 +80,7 @@ class DataQualityDict(DataQualityDict):
         if min_duration is not None:
             segments = filter(lambda i: i[1] - i[0] >= min_duration, segments)
             segments = SegmentList(segments)
+
+        if chunk_size is not None:
+            segments = split_segments(segments, chunk_size)
         return segments
