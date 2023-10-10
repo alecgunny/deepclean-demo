@@ -20,9 +20,10 @@ micromamba create -p /opt/env -f /opt/deepclean/projects/data/conda-lock.yml
 # installing dependencies since we don't want
 # to touch the libraries resolved by conda
 micromamba run -p /opt/env python -m \
-    pip install --no-deps --no-build-isolation \
+    pip install git+https://github.com/riga/law@master \
         -e /opt/deepclean/projects/utils \
-        -e /opt/deepclean/projects/data
+       	-e /opt/deepclean/projects/data \
+        -e /opt/deepclean/
 
 # initialize our shell so that we can execute
 # commands in our environment at run time
