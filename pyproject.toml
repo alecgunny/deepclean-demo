@@ -9,8 +9,8 @@ authors = [
 
 [tool.poetry.dependencies]
 python = ">=3.9,<3.12"
-luigi = "^3.0"
-law = "^0.1"
+#luigi = "^3.0"
+#law = {git = "git@github.com:riga/law.git", rev = "3e91aa4"}
 jupyter = "^1.0"
 
 [build-system]

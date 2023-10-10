@@ -13,6 +13,12 @@ I'll expand more on these when I have time, but for now I'll add a couple instru
 | **TODO: data authentication instructions**
 
 #### Install
+Before attempting to build anything, ensure that you have the relevant submodules initialized
+
+```bash
+git submodule update --init --recursive
+```
+
 ##### `pip` instructions: not recommended
 You can install the local library via `pip`:
 

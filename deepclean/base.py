@@ -15,26 +15,23 @@ root = Path(__file__).resolve().parent.parent
 
 class DeepCleanSandbox(singularity.SingularitySandbox):
     sandbox_type = "deepclean"
-    config_section_prefix = "deepclean"
 
     def _get_volumes(self):
         volumes = super()._get_volumes()
+        fnames = [
+            "/etc/krb5.conf",
+            "/etc/krb5.conf.d",
+            "/etc/pki/tls/certs/ca-bundle.crt",
+        ]
+        for fname in fnames:
+            volumes[fname] = fname
+
+        for dir in ["/etc/condor", "/cvmfs"]:
+            volumes[dir] = dir
+
         if self.task and getattr(self.task, "dev", False):
-            volumes[root] = "/opt/deepclean"
+            volumes[str(root)] = "/opt/deepclean"
         return volumes
-
-
-law.config.update(
-    {
-        "deepclean": {
-            "stagein_dir_name": "stagein",
-            "stageout_dir_name": "stageout",
-            "law_executable": "law",
-        },
-        "deepclean_env": {},
-        "deepclean_volumes": {},
-    }
-)
 
 
 class DeepCleanTask(law.SandboxTask):
@@ -55,8 +52,12 @@ class DeepCleanTask(law.SandboxTask):
             )
 
     @property
+    def ifo(self):
+        return self.cfg.ifo.value
+
+    @property
     def strain_channel(self):
-        return f"{self.cfg.ifo.value}:{self.cfg.strain_channel}"
+        return f"{self.ifo}:{self.cfg.strain_channel}"
 
     @property
     def witnesses(self):
@@ -64,15 +65,7 @@ class DeepCleanTask(law.SandboxTask):
 
     @property
     def sandbox(self):
-        return f"singularity::{self.image}"
-
-    @property
-    def singularity_forward_law(self) -> bool:
-        return False
-
-    @property
-    def singularity_allow_binds(self) -> bool:
-        return True
+        return f"deepclean::{self.image}"
 
     @property
     def singularity_args(self) -> Callable:
@@ -94,7 +87,7 @@ class DeepCleanTask(law.SandboxTask):
 
     @property
     def command(self) -> str:
-        return [self.command, "-c", "print('Hello world')"]
+        return [self.python, "-c", "print('Hello world')"]
 
     def run(self):
         try:

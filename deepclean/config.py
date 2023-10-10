@@ -12,8 +12,8 @@ problems = Enum("problem", problems)
 
 
 class deepclean(luigi.Config):
-    ifo = luigi.EnumParameter(enum=ifos)
-    problem = luigi.EnumListParameter(enum=problems)
+    ifo = luigi.EnumParameter(enum=ifos, default=ifos.H1)
+    problem = luigi.EnumListParameter(enum=problems, default=[problems["60Hz"],])
     strain_channel = luigi.Parameter(default="GDS-CALIB_STRAIN")
     container_root = luigi.Parameter(
         default=os.getenv("DEEPCLEAN_CONTAINER_ROOT", "")

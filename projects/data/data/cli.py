@@ -1,6 +1,7 @@
 import os
 
 from data.find import DataQualityDict
+from gwpy.segments import SegmentList
 from gwpy.timeseries import TimeSeriesDict
 from jsonargparse import ActionConfigFile, ArgumentParser
 
@@ -14,14 +15,37 @@ def fetch(
     a parser out of them.
     """
 
-    X = TimeSeriesDict.fetch(start=start, end=end, channels=channels)
+    X = TimeSeriesDict.fetch(
+        start=start, end=end, channels=channels, verbose=True
+    )
     return X.resample(sample_rate)
+
+
+def split_segments(segments: SegmentList, chunk_size: float) -> SegmentList:
+    """
+    Split a list of segments into segments that are at most
+    `chunk_size` seconds long
+    """
+    out_segments = SegmentList()
+    for segment in segments:
+        start, stop = segment
+        duration = stop - start
+        if duration > chunk_size:
+            num_segments = int((duration - 1) // chunk_size) + 1
+            for i in range(num_segments):
+                end = min(start + (i + 1) * chunk_size, stop)
+                seg = (start + i * chunk_size, end)
+                out_segments.append(seg)
+        else:
+            out_segments.append(segment)
+    return out_segments
 
 
 def main(args=None):
     query_parser = ArgumentParser()
     query_parser.add_method_arguments(DataQualityDict, "query_segments")
     query_parser.add_argument("--output-file", "-o", type=str)
+    query_parser.add_argument("--chunk-size", type=float, default=20000)
 
     fetch_parser = ArgumentParser()
     fetch_parser.add_function_arguments(fetch)
