@@ -4,6 +4,7 @@ import law
 import luigi
 
 from deepclean.base import DeepCleanTask
+from deepclean.workflow import LDGCondorWorkflow
 
 
 class DataTask(DeepCleanTask):
@@ -17,7 +18,13 @@ class DataTask(DeepCleanTask):
 
     def sandbox_env(self, env):
         env = super().sandbox_env(env)
-        for envvar in ["KRB5_KTNAME", "X509_USER_PROXY"]:
+        envvars = [
+            "KRB5_KTNAME",
+            "X509_USER_PROXY",
+            "GWDATAFIND_SERVER",
+            "NDSSERVER",
+        ]
+        for envvar in envvars:
             value = os.getenv(envvar)
             if value is not None:
                 env[envvar] = value
@@ -52,7 +59,7 @@ class Query(DataTask):
         return self.cli + args
 
 
-class Fetch(DataTask, law.LocalWorkflow):
+class Fetch(DataTask, law.LocalWorkflow, LDGCondorWorkflow):
     start = luigi.FloatParameter()
     end = luigi.FloatParameter()
     sample_rate = luigi.FloatParameter()
@@ -73,9 +80,10 @@ class Fetch(DataTask, law.LocalWorkflow):
 
     @workflow_condition.create_branch_map
     def create_branch_map(self):
-        segments = self.input()["segments"].load().splitlines()[1:3]
+        segments = self.input()["segments"].load().splitlines()[1:]
         segments = [i.split("\t") for i in segments]
-        return dict([(int(i[0]) + 1, i[1::2]) for i in segments])
+        x = dict([(int(i[0]) + 1, i[1::2]) for i in segments])
+        return x
 
     def workflow_requires(self):
         reqs = super().workflow_requires()
@@ -88,7 +96,6 @@ class Fetch(DataTask, law.LocalWorkflow):
         start = int(float(start))
         duration = int(float(duration))
         fname = f"{self.prefix}-{start}-{duration}.hdf5"
-
         target = law.LocalDirectoryTarget(self.data_dir)
         target = target.child(fname, type="f")
         return target
@@ -99,7 +106,6 @@ class Fetch(DataTask, law.LocalWorkflow):
         start = float(start)
         end = start + float(duration)
         channels = [self.strain_channel] + self.witnesses
-
         args = [
             "fetch",
             "--start",
